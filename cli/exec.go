@@ -262,6 +262,19 @@ func createEnv(profileName string, region string, endpointURL string) environ {
 
 	env.Set("AWS_VAULT", profileName)
 
+	// Set prompt prefix for both bash and zsh
+	// Both shells check for duplicate prefix before adding
+	promptPrefix := fmt.Sprintf("(aws-vault:%s) ", profileName)
+
+	// For bash: use PROMPT_COMMAND with duplicate check
+	bashPromptCmd := fmt.Sprintf(`if [[ "$PS1" != "(aws-vault:%s) "* ]]; then PS1="%s$PS1"; fi`, profileName, promptPrefix)
+	currentPromptCmd := os.Getenv("PROMPT_COMMAND")
+	if currentPromptCmd != "" {
+		env.Set("PROMPT_COMMAND", bashPromptCmd+"; "+currentPromptCmd)
+	} else {
+		env.Set("PROMPT_COMMAND", bashPromptCmd)
+	}
+
 	if region != "" {
 		// AWS_REGION is used by most SDKs. But boto3 (Python SDK) uses AWS_DEFAULT_REGION
 		// See https://docs.aws.amazon.com/sdkref/latest/guide/feature-region.html
